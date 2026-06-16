@@ -1,0 +1,12 @@
+DEVICE_ID=DiKi-F01
+HOSTNAME=asus-x501a-01
+CONFIG=LinuxMint, Cinnamon,1 profiili
+OWNER=DiKi
+USER=Ahti Planman
+LOCATION=Siilinjärvi
+PURPOSE=Kehitus- ja testikone
+STATUS=Aktiivinen
+MANUFACTURE_YEAR=2012
+ACQUISITION_YEAR=2026
+NOTES=Äänilehden vanha Win8-kone
+SERIAL_NUMBER=C9N0CX06087136B 
