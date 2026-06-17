@@ -13,7 +13,7 @@ DIKI="$HOME/diki"
 
 echo "Luodaan kansiorakenne..."
 
-mkdir -p "$DIKI/sovellukset"
+mkdir -p "$DIKI/ohjelmat"
 mkdir -p "$DIKI/kuvat"
 mkdir -p "$DIKI/tiedot"
 mkdir -p "$DIKI/tulokset"
@@ -25,7 +25,7 @@ sudo apt install -y python3 python3-gi gir1.2-gtk-3.0 python3-cairo python3-repo
 
 echo "Kopioidaan tiedostot paikoilleen..."
 
-cp sovellukset/konetiedot.py "$DIKI/sovellukset/"
+cp ohjelmat/konetiedot.py "$DIKI/ohjelmat./"
 cp kuvat/diki-logo.png "$DIKI/kuvat/"
 cp tiedot/perustiedot.json "$DIKI/tiedot/"
 
@@ -33,7 +33,7 @@ echo "Luodaan yhteinen käynnistyskomento..."
 
 sudo tee /usr/local/bin/konetiedot > /dev/null << 'EOF'
 #!/bin/bash
-python3 "$HOME/diki/sovellukset/konetiedot.py"
+python3 "$HOME/diki/ohjelmat/konetiedot.py"
 EOF
 
 sudo chmod +x /usr/local/bin/konetiedot

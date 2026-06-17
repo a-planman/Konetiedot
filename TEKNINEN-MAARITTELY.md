@@ -29,7 +29,7 @@ Sen rakenne:
 
 ```text
 diki/
-├── sovellukset/
+├── ohjelmat/
 │   └── konetiedot.py
 ├── kuvat/
 │   └── diki-logo.png
@@ -96,7 +96,7 @@ Sisältö:
 
 ```bash
 #!/bin/bash
-python3 "$HOME/diki/sovellukset/konetiedot.py"
+python3 "$HOME/diki/ohjelmat/konetiedot.py"
 ```
 
 Ratkaisu poistaa tarpeen käyttää käyttäjänimeä työpöydän käynnistimessä.
@@ -145,7 +145,7 @@ Asennuspaketti sisältää seuraavat tiedostot:
 ```text
 diki/
 ├── asenna.sh
-├── sovellukset/
+├── ohjelmat/
 │   └── konetiedot.py
 ├── kuvat/
 │   └── diki-logo.png
