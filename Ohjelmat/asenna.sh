@@ -3,14 +3,12 @@
 echo "DiKi Konetiedot - asennus alkaa"
 echo "--------------------------------"
 
-# Varmistetaan, että komento ajetaan tavallisena käyttäjänä
 if [ "$EUID" -eq 0 ]; then
     echo "Älä aja tätä komentoa sudolla."
     echo "Käytä: ./asenna.sh"
     exit 1
 fi
 
-# Peruskansiot
 DIKI="$HOME/diki"
 
 echo "Luodaan kansiorakenne..."
@@ -19,20 +17,17 @@ mkdir -p "$DIKI/sovellukset"
 mkdir -p "$DIKI/kuvat"
 mkdir -p "$DIKI/tiedot"
 mkdir -p "$DIKI/tulokset"
-mkdir -p "$DIKI/kaynnistimet"
 
 echo "Asennetaan tarvittavat paketit..."
 
 sudo apt update
-sudo apt install -y python3 python3-gi gir1.2-gtk-3.0 python3-cairo python3-reportlab hardinfo
+sudo apt install -y python3 python3-gi gir1.2-gtk-3.0 python3-cairo python3-reportlab hardinfo dmidecode
 
 echo "Kopioidaan tiedostot paikoilleen..."
 
-# Oletus: asenna.sh ajetaan puretun diki-kansion sisältä
-cp sovellus/konetiedot.py "$DIKI/sovellukset/"
+cp sovellukset/konetiedot.py "$DIKI/sovellukset/"
 cp kuvat/diki-logo.png "$DIKI/kuvat/"
 cp tiedot/perustiedot.json "$DIKI/tiedot/"
-cp kaynnistimet/konetiedot.desktop "$DIKI/kaynnistimet/"
 
 echo "Luodaan yhteinen käynnistyskomento..."
 
@@ -43,13 +38,26 @@ EOF
 
 sudo chmod +x /usr/local/bin/konetiedot
 
-echo "Kopioidaan käynnistin työpöydälle..."
+echo "Luodaan työpöydän käynnistin..."
 
-cp "$DIKI/kaynnistimet/konetiedot.desktop" "$HOME/Työpöytä/" 2>/dev/null || \
-cp "$DIKI/kaynnistimet/konetiedot.desktop" "$HOME/Desktop/"
+TYOPOYTA="$HOME/Työpöytä"
 
-chmod +x "$HOME/Työpöytä/konetiedot.desktop" 2>/dev/null
-chmod +x "$HOME/Desktop/konetiedot.desktop" 2>/dev/null
+if [ ! -d "$TYOPOYTA" ]; then
+    TYOPOYTA="$HOME/Desktop"
+fi
+
+cat > "$TYOPOYTA/konetiedot.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=DiKi Koneen tiedot
+Comment=Näytä tämän tietokoneen tiedot
+Exec=konetiedot
+Icon=$HOME/diki/kuvat/diki-logo.png
+Terminal=false
+Categories=Utility;
+EOF
+
+chmod +x "$TYOPOYTA/konetiedot.desktop"
 
 echo "Haetaan koneen sarjanumero..."
 
@@ -78,6 +86,7 @@ EOF
 
 echo "--------------------------------"
 echo "Asennus valmis."
-echo "Kokeile käynnistintä työpöydältä tai kirjoita päätteeseen:"
+echo "Käynnistin on luotu työpöydälle."
+echo "Voit kokeilla myös päätteessä komennolla:"
 echo
 echo "konetiedot"
