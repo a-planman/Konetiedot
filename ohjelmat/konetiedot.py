@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import subprocess
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -14,7 +15,7 @@ from reportlab.pdfgen import canvas
 HOME = Path.home()
 DIKI = HOME / "diki"
 LOGO = DIKI / "kuvat" / "diki-logo.png"
-PERUSDATA = DIKI / "tiedot" / "perusdata"
+PERUSDATA = DIKI / "tiedot" / "perustiedot.json"
 TULOKSET = DIKI / "tulokset"
 
 
@@ -35,15 +36,11 @@ def lue_tiedosto(polku):
 
 
 def lue_perusdata():
-    tiedot = {}
     try:
-        for rivi in PERUSDATA.read_text().splitlines():
-            if "=" in rivi:
-                avain, arvo = rivi.split("=", 1)
-                tiedot[avain.strip()] = arvo.strip()
+        with open(PERUSDATA, "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception:
-        pass
-    return tiedot
+        return {}
 
 
 def tieto(arvo):
@@ -103,8 +100,8 @@ def hae_akku():
     try:
         tunnit = int(energy_now) / int(power_now)
         h = int(tunnit)
-        minutit = round((tunnit - h) * 60)
-        kayttoaika = f"noin {h} h {minutit} min"
+        minuutit = round((tunnit - h) * 60)
+        kayttoaika = f"noin {h} h {minuutit} min"
     except Exception:
         kayttoaika = "Ei tiedossa"
 
@@ -140,11 +137,20 @@ def hae_tiedot():
     arvio, kayttoika = arvioi_kaytettavyys(muisti_gb, akun_kunto_pros)
 
     tiedot = [
-        ("Laitetunnus:", tieto(perusdata.get("DEVICE_ID"))),
-        ("Hostname:", tieto(perusdata.get("HOSTNAME") or aja("hostname"))),
+        ("Laitetunnus:", tieto(perusdata.get("laitetunnus"))),
+        ("Hostname:", tieto(perusdata.get("hostname") or aja("hostname"))),
         ("Valmistaja:", tieto(lue_tiedosto("/sys/class/dmi/id/sys_vendor"))),
         ("Malli:", tieto(lue_tiedosto("/sys/class/dmi/id/product_name"))),
-        ("Sarjanumero:", tieto(perusdata.get("SERIAL_NUMBER"))),
+        ("Sarjanumero:", tieto(perusdata.get("sarjanumero"))),
+        ("Omistaja:", tieto(perusdata.get("omistaja"))),
+        ("Käyttäjä:", tieto(perusdata.get("kayttaja"))),
+        ("Sijainti:", tieto(perusdata.get("sijainti"))),
+        ("Käyttötarkoitus:", tieto(perusdata.get("kayttotarkoitus"))),
+        ("Status:", tieto(perusdata.get("status"))),
+        ("Valmistusvuosi:", tieto(perusdata.get("valmistusvuosi"))),
+        ("Hankintavuosi:", tieto(perusdata.get("hankintavuosi"))),
+        ("Kokoonpano:", tieto(perusdata.get("kokoonpano"))),
+        ("Huomautukset:", tieto(perusdata.get("huomautukset"))),
         ("BIOS-päivä:", tieto(lue_tiedosto("/sys/class/dmi/id/bios_date"))),
         ("Muisti:", hae_muisti()),
         ("Levy:", hae_levy()),
@@ -189,8 +195,12 @@ def tallenna_pdf(tiedot, arvio, kayttoika):
         c.setFont("Helvetica-Bold", 11)
         c.drawString(70, y, nimi)
         c.setFont("Helvetica", 11)
-        c.drawString(210, y, arvo)
+        c.drawString(210, y, str(arvo))
         y -= 20
+
+        if y < 70:
+            c.showPage()
+            y = korkeus - 60
 
     y -= 15
     c.setFont("Helvetica-Bold", 12)
@@ -209,7 +219,7 @@ def tallenna_pdf(tiedot, arvio, kayttoika):
 class Ikkuna(Gtk.Window):
     def __init__(self):
         super().__init__(title="DiKi - koneen tiedot")
-        self.set_default_size(640, 700)
+        self.set_default_size(700, 760)
         self.set_border_width(20)
 
         self.tiedot, self.arvio, self.kayttoika = hae_tiedot()
@@ -237,7 +247,7 @@ class Ikkuna(Gtk.Window):
             nimi_label = Gtk.Label(label=nimi)
             nimi_label.set_xalign(0)
 
-            arvo_label = Gtk.Label(label=arvo)
+            arvo_label = Gtk.Label(label=str(arvo))
             arvo_label.set_xalign(0)
             arvo_label.set_selectable(True)
 
