@@ -3,6 +3,7 @@
 set -e
 
 DIKI="$HOME/diki"
+DESKTOP="$HOME/Työpöytä"
 
 echo "Aloitetaan DiKi-koneen tiedot -asennus"
 echo "Nykyinen hakemisto:"
@@ -68,9 +69,12 @@ EOF
 
 sudo chmod +x /usr/local/bin/konetiedot
 
-echo "Luodaan työpöydän käynnistin..."
+echo "--------------------------------"
+echo "Luodaan työpöydän käynnistimet..."
 
-cat > "$HOME/Työpöytä/konetiedot.desktop" <<EOF
+mkdir -p "$DESKTOP"
+
+cat > "$DESKTOP/konetiedot.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=DiKi-koneen tiedot
@@ -81,12 +85,29 @@ Terminal=false
 Categories=Utility;
 EOF
 
-chmod +x "$HOME/Työpöytä/konetiedot.desktop"
+chmod +x "$DESKTOP/konetiedot.desktop"
+
+cat > "$DESKTOP/hardinfo.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Kattava HardInfo
+Comment=Näyttää koneen kattavat tekniset tiedot
+Exec=hardinfo
+Icon=hardinfo
+Terminal=false
+Categories=System;
+EOF
+
+chmod +x "$DESKTOP/hardinfo.desktop"
 
 echo "--------------------------------"
 echo "Asennus valmis."
-echo "Käynnistin on luotu työpöydälle."
-echo "Voit kokeilla myös päätteessä komennolla:"
+echo "Käynnistimet on luotu työpöydälle:"
+echo "  - DiKi-koneen tiedot"
+echo "  - Kattava HardInfo"
+echo
+echo "Voit kokeilla päätteessä komennoilla:"
 echo
 echo "  konetiedot"
+echo "  hardinfo"
 echo
