@@ -47,6 +47,17 @@ def tieto(arvo):
     return arvo if arvo else "Ei tiedossa"
 
 
+def hae_kayttojarjestelma():
+    nimi = aja("grep '^PRETTY_NAME=' /etc/os-release | cut -d= -f2- | tr -d '\"'")
+    return tieto(nimi)
+
+
+def hae_tyopoyta():
+    tyopoyta = aja("echo $XDG_CURRENT_DESKTOP")
+    tyopoyta = tyopoyta.replace("X-", "")
+    return tieto(tyopoyta)
+
+
 def hae_muisti_gb():
     rivi = aja("free -g | awk '/Mem:/ {print $2}'")
     try:
@@ -73,7 +84,6 @@ def hae_akku():
         return "Ei akkua", "Ei akkua", "Ei akkua", None
 
     akku = akut[0]
-
     tila = lue_tiedosto(akku / "status")
     kapasiteetti = lue_tiedosto(akku / "capacity")
 
@@ -136,12 +146,9 @@ def hae_tiedot():
     muisti_gb = hae_muisti_gb()
     arvio, kayttoika = arvioi_kaytettavyys(muisti_gb, akun_kunto_pros)
 
-    tiedot = [
+    perustiedot = [
         ("Laitetunnus:", tieto(perusdata.get("laitetunnus"))),
         ("Hostname:", tieto(perusdata.get("hostname") or aja("hostname"))),
-        ("Valmistaja:", tieto(lue_tiedosto("/sys/class/dmi/id/sys_vendor"))),
-        ("Malli:", tieto(lue_tiedosto("/sys/class/dmi/id/product_name"))),
-        ("Sarjanumero:", tieto(perusdata.get("sarjanumero"))),
         ("Omistaja:", tieto(perusdata.get("omistaja"))),
         ("Käyttäjä:", tieto(perusdata.get("kayttaja"))),
         ("Sijainti:", tieto(perusdata.get("sijainti"))),
@@ -151,6 +158,14 @@ def hae_tiedot():
         ("Hankintavuosi:", tieto(perusdata.get("hankintavuosi"))),
         ("Kokoonpano:", tieto(perusdata.get("kokoonpano"))),
         ("Huomautukset:", tieto(perusdata.get("huomautukset"))),
+    ]
+
+    jarjestelmatiedot = [
+        ("Käyttöjärjestelmä:", hae_kayttojarjestelma()),
+        ("Työpöytä:", hae_tyopoyta()),
+        ("Valmistaja:", tieto(lue_tiedosto("/sys/class/dmi/id/sys_vendor"))),
+        ("Malli:", tieto(lue_tiedosto("/sys/class/dmi/id/product_name"))),
+        ("Sarjanumero:", tieto(perusdata.get("sarjanumero"))),
         ("BIOS-päivä:", tieto(lue_tiedosto("/sys/class/dmi/id/bios_date"))),
         ("Muisti:", hae_muisti()),
         ("Levy:", hae_levy()),
@@ -160,14 +175,29 @@ def hae_tiedot():
         ("Arvioitu käyttöaika:", kayttoaika),
     ]
 
-    return tiedot, arvio, kayttoika
+    return perustiedot, jarjestelmatiedot, arvio, kayttoika
 
 
-def tallenna_pdf(tiedot, arvio, kayttoika):
+def piirra_tiedot(c, otsikko, tiedot, x, y):
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(x, y, otsikko)
+    y -= 22
+
+    for nimi, arvo in tiedot:
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x, y, nimi)
+        c.setFont("Helvetica", 9)
+        c.drawString(x + 105, y, str(arvo)[:45])
+        y -= 16
+
+    return y
+
+
+def tallenna_pdf(perustiedot, jarjestelmatiedot, arvio, kayttoika):
     TULOKSET.mkdir(parents=True, exist_ok=True)
 
     laitetunnus = "tuntematon"
-    for nimi, arvo in tiedot:
+    for nimi, arvo in perustiedot:
         if nimi == "Laitetunnus:" and arvo != "Ei tiedossa":
             laitetunnus = arvo
 
@@ -189,70 +219,83 @@ def tallenna_pdf(tiedot, arvio, kayttoika):
 
     c.setFont("Helvetica", 11)
     c.drawString(70, y, f"Tulostuspäivä: {pvm}")
-    y -= 30
+    y -= 35
 
-    for nimi, arvo in tiedot:
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(70, y, nimi)
-        c.setFont("Helvetica", 11)
-        c.drawString(210, y, str(arvo))
-        y -= 20
+    y1 = piirra_tiedot(c, "Perustiedot", perustiedot, 55, y)
+    y2 = piirra_tiedot(c, "Järjestelmän tiedot", jarjestelmatiedot, 310, y)
 
-        if y < 70:
-            c.showPage()
-            y = korkeus - 60
-
-    y -= 15
+    y = min(y1, y2) - 20
     c.setFont("Helvetica-Bold", 12)
     c.drawString(70, y, "Arvio")
     y -= 22
 
-    c.setFont("Helvetica", 11)
+    c.setFont("Helvetica", 10)
     c.drawString(70, y, arvio)
-    y -= 18
+    y -= 16
     c.drawString(70, y, kayttoika)
 
     c.save()
     return polku
 
 
+def lisaa_tietoruudukko(laatikko, otsikko, tiedot):
+    otsikko_label = Gtk.Label()
+    otsikko_label.set_xalign(0)
+    otsikko_label.set_markup(f"<b>{otsikko}</b>")
+    laatikko.pack_start(otsikko_label, False, False, 0)
+
+    ruudukko = Gtk.Grid()
+    ruudukko.set_column_spacing(15)
+    ruudukko.set_row_spacing(6)
+    laatikko.pack_start(ruudukko, False, False, 0)
+
+    for rivi, (nimi, arvo) in enumerate(tiedot):
+        nimi_label = Gtk.Label(label=nimi)
+        nimi_label.set_xalign(0)
+
+        arvo_label = Gtk.Label(label=str(arvo))
+        arvo_label.set_xalign(0)
+        arvo_label.set_selectable(True)
+        arvo_label.set_line_wrap(True)
+        arvo_label.set_max_width_chars(32)
+
+        ruudukko.attach(nimi_label, 0, rivi, 1, 1)
+        ruudukko.attach(arvo_label, 1, rivi, 1, 1)
+
+
 class Ikkuna(Gtk.Window):
     def __init__(self):
         super().__init__(title="DiKi - koneen tiedot")
-        self.set_default_size(700, 760)
+        self.set_default_size(980, 640)
         self.set_border_width(20)
 
-        self.tiedot, self.arvio, self.kayttoika = hae_tiedot()
+        self.perustiedot, self.jarjestelmatiedot, self.arvio, self.kayttoika = hae_tiedot()
 
-        laatikko = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.add(laatikko)
+        paalaatikko = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.add(paalaatikko)
 
         if LOGO.exists():
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                 str(LOGO), width=120, height=80, preserve_aspect_ratio=True
             )
             logo = Gtk.Image.new_from_pixbuf(pixbuf)
-            laatikko.pack_start(logo, False, False, 0)
+            paalaatikko.pack_start(logo, False, False, 0)
 
         otsikko = Gtk.Label()
         otsikko.set_markup("<span size='x-large' weight='bold'>DiKi-koneen tiedot</span>")
-        laatikko.pack_start(otsikko, False, False, 0)
+        paalaatikko.pack_start(otsikko, False, False, 0)
 
-        ruudukko = Gtk.Grid()
-        ruudukko.set_column_spacing(25)
-        ruudukko.set_row_spacing(8)
-        laatikko.pack_start(ruudukko, False, False, 0)
+        sarakkeet = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=35)
+        paalaatikko.pack_start(sarakkeet, False, False, 0)
 
-        for rivi, (nimi, arvo) in enumerate(self.tiedot):
-            nimi_label = Gtk.Label(label=nimi)
-            nimi_label.set_xalign(0)
+        vasen = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        oikea = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
 
-            arvo_label = Gtk.Label(label=str(arvo))
-            arvo_label.set_xalign(0)
-            arvo_label.set_selectable(True)
+        sarakkeet.pack_start(vasen, True, True, 0)
+        sarakkeet.pack_start(oikea, True, True, 0)
 
-            ruudukko.attach(nimi_label, 0, rivi, 1, 1)
-            ruudukko.attach(arvo_label, 1, rivi, 1, 1)
+        lisaa_tietoruudukko(vasen, "Perustiedot", self.perustiedot)
+        lisaa_tietoruudukko(oikea, "Järjestelmän tiedot", self.jarjestelmatiedot)
 
         arvio_label = Gtk.Label()
         arvio_label.set_xalign(0)
@@ -260,15 +303,20 @@ class Ikkuna(Gtk.Window):
         arvio_label.set_markup(
             f"<b>Arvio:</b> {self.arvio}\n<b>{self.kayttoika}</b>"
         )
-        laatikko.pack_start(arvio_label, False, False, 10)
+        paalaatikko.pack_start(arvio_label, False, False, 10)
 
         nappi = Gtk.Button(label="Tallenna PDF-konekortti")
         nappi.connect("clicked", self.tallenna_pdf_painettu)
-        laatikko.pack_start(nappi, False, False, 5)
+        paalaatikko.pack_start(nappi, False, False, 5)
 
     def tallenna_pdf_painettu(self, painike):
         try:
-            polku = tallenna_pdf(self.tiedot, self.arvio, self.kayttoika)
+            polku = tallenna_pdf(
+                self.perustiedot,
+                self.jarjestelmatiedot,
+                self.arvio,
+                self.kayttoika
+            )
             viesti = f"PDF tallennettu:\n{polku}"
             tyyppi = Gtk.MessageType.INFO
         except Exception as virhe:
