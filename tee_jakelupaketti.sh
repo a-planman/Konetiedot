@@ -52,27 +52,49 @@ Asennusohje
 
 1. Pura zip-tiedosto.
 
-2. Avaa pääte puretussa konetiedot-asennus-kansiossa.
+2. Avaa purettu kansio:
 
-3. Anna asennusskriptille suoritusoikeus:
+   konetiedot-asennus
+
+3. Avaa pääte kyseisessä kansiossa:
+
+   - Napsauta hiiren oikealla kansiossa olevaa tyhjää kohtaa.
+   - Valitse "Avaa päätteessä".
+
+4. Anna asennusskriptille suoritusoikeus:
 
    chmod +x asenna.sh
 
-4. Suorita asennus:
+5. Suorita asennus:
 
    ./asenna.sh
 
-5. Asennuksen jälkeen työpöydälle tulee kuvake:
+6. Asennuksen jälkeen työpöydälle tulee kuvakkeet:
 
-   DiKi-koneen tiedot
+   - DiKi-koneen tiedot
+   - Kattava HardInfo
 
-6. Ohjelman voi käynnistää myös päätteessä komennolla:
+7. Ohjelman voi käynnistää myös päätteessä:
 
    konetiedot
+
+PDF-konekortit
+--------------
 
 PDF-konekortit tallentuvat kansioon:
 
    ~/diki/tulokset/
+
+Vinkki
+------
+
+Jos et ole aiemmin käyttänyt Linuxin päätettä, helpoin tapa
+on avata ensin haluttu kansio ja valita hiiren oikealla:
+
+   "Avaa päätteessä"
+
+Tällöin ei tarvitse kirjoittaa cd-komentoja eikä etsiä
+kansion sijaintia käsin.
 
 DiKi ry
 EOF
